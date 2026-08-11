@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>V-Corals Water Parameters</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --ink:#e9f2f1;
+    --deep:#061c22;
+    --deep2:#0a2830;
+    --panel:#0d323b;
+    --line:#1b4750;
+    --coral:#ff7a59;
+    --coral-dim:#ff7a5955;
+    --kelp:#4fd1b3;
+    --amber:#f2c14e;
+    --muted:#9fc0bf;
+    --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 20% -10%, #0f3d46 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 0%, #0a2a30 0%, transparent 60%),
+      var(--deep);
+    color:var(--ink);
+    font-family: "Iowan Old Style","Georgia",serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:20px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px;margin-bottom:18px;
+  }
+  .brand{display:flex;align-items:baseline;gap:14px;}
+  .brand h1{
+    font-family:"Trebuchet MS","Helvetica Neue",sans-serif;
+    font-weight:700;font-size:26px;letter-spacing:0.5px;margin:0;
+    color:var(--ink);
+  }
+  .brand .tag{
+    font-family:"Courier New",monospace;font-size:11px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--kelp);
+    border:1px solid var(--kelp);border-radius:20px;padding:3px 10px;
+  }
+  .range{
+    font-family:"Courier New",monospace;font-size:13px;color:var(--muted);
+    text-align:right;
+  }
+  .range strong{color:var(--amber);}
+
+  /* --- Date range filter bar --- */
+  .filterbar{
+    display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    padding:14px 18px;margin-bottom:18px;
+  }
+  .filterbar .field{
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .filterbar label{
+    font-family:"Courier New",monospace;font-size:10.5px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--muted);
+  }
+  .filterbar input[type=date]{
+    font-family:"Courier New",monospace;font-size:13px;
+    background:var(--deep2);color:var(--ink);border:1px solid var(--line);
+    border-radius:3px;padding:6px 8px;color-scheme:dark;
+  }
+  .filterbar input[type=date]:focus{outline:none;border-color:var(--kelp);}
+  .filterbar button{
+    font-family:"Courier New",monospace;font-size:12px;letter-spacing:0.5px;
+    border-radius:3px;padding:8px 16px;cursor:pointer;transition:all .15s ease;
+    border:1px solid var(--line);
+  }
+  .filterbar button#applyFilter{
+    background:var(--coral);color:#20100a;border-color:var(--coral);font-weight:bold;
+  }
+  .filterbar button#applyFilter:hover{filter:brightness(1.08);}
+  .filterbar button#resetFilter{
+    background:transparent;color:var(--muted);
+  }
+  .filterbar button#resetFilter:hover{border-color:var(--kelp);color:var(--ink);}
+  .filterbar .hint{
+    font-family:"Courier New",monospace;font-size:11px;color:var(--muted);
+    margin-left:auto;align-self:center;
+  }
+
+  nav.systems{
+    display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;
+  }
+  nav.systems button{
+    font-family:"Courier New",monospace;font-size:12.5px;letter-spacing:0.5px;
+    background:var(--panel);color:var(--muted);border:1px solid var(--line);
+    padding:7px 14px;border-radius:3px;cursor:pointer;transition:all .15s ease;
+  }
+  nav.systems button:hover{border-color:var(--kelp);color:var(--ink);}
+  nav.systems button.active{
+    background:var(--coral);color:#20100a;border-color:var(--coral);font-weight:bold;
+  }
+
+  .sys-header{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--coral);
+    border-radius:4px;padding:16px 20px;margin-bottom:20px;
+  }
+  .sys-header h2{margin:0;font-family:"Trebuchet MS",sans-serif;font-size:20px;}
+  .sys-meta{
+    display:flex;gap:22px;flex-wrap:wrap;font-family:"Courier New",monospace;font-size:12px;color:var(--muted);
+  }
+  .sys-meta b{color:var(--kelp);display:block;font-size:15px;}
+
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    padding:14px 16px 8px;position:relative;overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, var(--kelp), transparent);
+  }
+  .card h3{
+    margin:0 0 2px;font-family:"Trebuchet MS",sans-serif;font-size:13px;
+    letter-spacing:1px;text-transform:uppercase;color:var(--ink);
+  }
+  .card .sub{font-family:"Courier New",monospace;font-size:11px;color:var(--muted);margin-bottom:6px;}
+  .card .missing{
+    font-family:"Courier New",monospace;font-size:12px;color:var(--muted);
+    padding:30px 0;text-align:center;font-style:italic;
+  }
+  canvas{max-height:170px;}
+  .flag{color:var(--danger);font-weight:bold;}
+  .ok{color:var(--kelp);}
+
+  footer{
+    margin-top:30px;font-family:"Courier New",monospace;font-size:11px;color:var(--muted);
+    border-top:1px solid var(--line);padding-top:14px;line-height:1.6;
+  }
+
+  /* --- Google Sheets sync panel --- */
+  .gsheet-panel{
+    display:flex;flex-direction:column;gap:8px;
+    background:var(--deep2);border:1px solid var(--line);border-radius:4px;
+    padding:12px 14px;margin-top:10px;width:100%;
+  }
+  .gsheet-panel summary{
+    cursor:pointer;font-family:"Courier New",monospace;font-size:11.5px;letter-spacing:1px;
+    text-transform:uppercase;color:var(--kelp);
+  }
+  .gsheet-row{ display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px; }
+  .gsheet-row label{
+    font-family:"Courier New",monospace;font-size:10.5px;color:var(--muted);min-width:110px;
+  }
+  .gsheet-row input[type=text]{
+    flex:1;min-width:200px;font-family:"Courier New",monospace;font-size:12px;
+    background:var(--deep);color:var(--ink);border:1px solid var(--line);
+    border-radius:3px;padding:6px 8px;
+  }
+  .gsheet-row input[type=text]:focus{ outline:none;border-color:var(--kelp); }
+  .gsheet-actions{ display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;align-items:center; }
+  .gsheet-actions button{
+    font-family:"Courier New",monospace;font-size:12px;letter-spacing:0.5px;
+    border-radius:3px;padding:7px 14px;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel);color:var(--muted);
+  }
+  .gsheet-actions button:hover{ border-color:var(--kelp);color:var(--ink); }
+  .gsheet-actions button#gsheetSync{
+    background:var(--kelp);color:#062824;border-color:var(--kelp);font-weight:bold;
+  }
+  .gsheet-actions button:disabled{ opacity:.45;cursor:not-allowed; }
+  .gsheet-hint{ font-family:"Courier New",monospace;font-size:10.5px;color:var(--muted);line-height:1.5; }
+  .gsheet-hint a{ color:var(--kelp); }
+  .gsheet-status{ font-family:"Courier New",monospace;font-size:11px;color:var(--muted); }
+  .gsheet-status.ok{ color:var(--kelp); }
+  .gsheet-status.err{ color:var(--danger); }
+
+  /* --- Sheet-sourced point notes (marker + tooltip line) --- */
+  .card{ position:relative; }
+  .note-legend{
+    display:flex;align-items:center;gap:6px;margin-top:4px;
+    font-family:"Courier New",monospace;font-size:10px;color:var(--muted);
+  }
+  .note-legend .dot{
+    width:8px;height:8px;border-radius:50%;background:var(--amber);
+    border:1px solid #00000055;display:inline-block;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>V-Corals</h1>
+      <span class="tag">Water Parameters</span>
+    </div>
+    <div class="range">Showing <strong id="rangeLabel">—</strong></div>
+  </header>
+
+  <!-- Date range filter -->
+  <div class="filterbar">
+    <div class="field">
+      <label for="fromDate">From</label>
+      <input type="date" id="fromDate">
+    </div>
+    <div class="field">
+      <label for="toDate">To</label>
+      <input type="date" id="toDate">
+    </div>
+    <button id="applyFilter">Apply</button>
+    <button id="resetFilter">Reset to last week</button>
+    <div class="hint" id="dataBoundsHint"></div>
+  </div>
+
+  <details class="gsheet-panel" id="gsheetPanel" open>
+    <summary>☁ Data source: Google Sheets (private, sign-in required)</summary>
+    <div class="gsheet-hint">
+      This dashboard holds no readings of its own — every load pulls live from your private Google Sheet.
+      One-time setup: create an OAuth 2.0 <b>Client ID</b> ("Web application") in
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a>,
+      enable the <b>Google Sheets API</b>, and add this page's URL under "Authorized JavaScript origins".
+      The Client ID is a public identifier (not a secret) — it's safe to leave visible in this page's source.<br><br>
+      <b>Who can actually get in:</b> anyone can attempt to sign in, but Google Sheets API only returns data to
+      accounts your Sheet is already shared with — the sharing list on the Sheet itself is what restricts access,
+      not this page. For a company rollout, using a Google Workspace "Internal" OAuth app additionally limits
+      sign-in to your organization's accounts. Add or remove people via the Sheet's normal "Share" dialog.<br><br>
+      Add a <b>Notes</b> column to any system tab — any day with text there gets a marked point on the chart
+      with the note shown on hover.
+    </div>
+    <div class="gsheet-row">
+      <label for="gsheetClientId">OAuth Client ID</label>
+      <input type="text" id="gsheetClientId" placeholder="xxxxxxxxxx.apps.googleusercontent.com">
+    </div>
+    <div class="gsheet-row">
+      <label for="gsheetId">Spreadsheet ID / URL</label>
+      <input type="text" id="gsheetId" placeholder="Paste the Google Sheet link or its ID">
+    </div>
+    <div class="gsheet-actions">
+      <button id="gsheetConnect" type="button">Connect Google Account</button>
+      <button id="gsheetSync" type="button" disabled>⟳ Sync now</button>
+      <span class="gsheet-status" id="gsheetStatus"></span>
+    </div>
+  </details>
+
+  <nav class="systems" id="systemNav"></nav>
+
+  <div class="sys-header">
+    <h2 id="sysTitle">System</h2>
+    <div class="sys-meta" id="sysMeta"></div>
+  </div>
+
+  <div class="grid" id="chartGrid">
+    <div class="card" id="noDataCard">
+      <div class="missing">No data loaded. Expand "☁ Sync from Google Sheets" above, connect your Google account, and sync to load your systems.</div>
+    </div>
+  </div>
+
+  <footer id="footerNote"></footer>
+</div>
+
+
+<script id="raw-data" type="application/json">{"labels":{"A":"System A","B":"System B","C":"System C","D":"System D (ORB)","E":"System E (ORA)","CQ1":"Coral Quarantine 1","CQ2":"Coral Quarantine 2","CQ3":"Coral Quarantine 3","CQ4":"Coral Quarantine 4","FQ1":"Fish Quarantine 1","FQ2":"Fish Quarantine 2","FQ3":"Fish Quarantine 3","FQ4":"Fish Quarantine 4"},"targets":{"A":{"salinity":35,"temp":24,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"B":{"salinity":35,"temp":23,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"C":{"salinity":35,"temp":23,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"E":{"salinity":35,"temp":24,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"D":{"salinity":35,"temp":24,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"CQ1":{"salinity":35,"temp":22,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"CQ2":{"salinity":35,"temp":22,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"CQ3":{"salinity":35,"temp":22,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"CQ4":{"salinity":35,"temp":23,"alk":9.5,"ca":440,"mg":1400,"po4":0.04,"no3":[5,10]},"FQ1":{"salinity":32,"temp":29,"alk":7.5,"ca":410,"mg":1260,"po4":null,"no3":null},"FQ2":{"salinity":32,"temp":29,"alk":7.5,"ca":410,"mg":1260,"po4":null,"no3":null},"FQ3":{"salinity":33,"temp":25,"alk":7.5,"ca":410,"mg":1260,"po4":null,"no3":null},"FQ4":{"salinity":33,"temp":25,"alk":7.5,"ca":410,"mg":1260,"po4":null,"no3":null}},"fields":["salinity","temp","alk","ca","mg","no2","no3","po4","nh4","redox"],"week":{},"start":"","end":""}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('raw-data').textContent);
+function decodeWeek(encoded, fields){
+  const out = {};
+  for(const sys in encoded){
+    const str = encoded[sys];
+    out[sys] = str ? str.split(';').map(rowStr=>{
+      const parts = rowStr.split(',');
+      const rec = { date: parts[0] };
+      fields.forEach((f,i)=>{ const v = parts[i+1]; rec[f] = (v===''||v===undefined) ? null : parseFloat(v); });
+      return rec;
+    }) : [];
+  }
+  return out;
+}
+const week = decodeWeek(DATA.week, DATA.fields), targets = DATA.targets, labels = DATA.labels;
+const order = ['A','B','C','D','E','CQ1','CQ2','CQ3','CQ4','FQ1','FQ2','FQ3','FQ4'];
+
+function fmtDate(iso){
+  const d = new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+}
+
+// --- Compute overall min/max date across ALL systems (for input bounds) ---
+function computeGlobalBounds(){
+  let minD = null, maxD = null;
+  order.forEach(sn=>{
+    (week[sn]||[]).forEach(r=>{
+      if(!r.date) return;
+      if(minD===null || r.date < minD) minD = r.date;
+      if(maxD===null || r.date > maxD) maxD = r.date;
+    });
+  });
+  return { min: minD || DATA.start, max: maxD || DATA.end };
+}
+let BOUNDS = computeGlobalBounds();
+
+// --- Last Sunday→Saturday week containing (or ending at) the latest date found ---
+function lastWeekRange(maxIso, minIso){
+  const d = new Date(maxIso+'T00:00:00');
+  const dow = d.getDay(); // 0 = Sunday ... 6 = Saturday
+  const sun = new Date(d); sun.setDate(d.getDate() - dow);
+  const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+  const toIso = x => x.toISOString().slice(0,10);
+  let from = toIso(sun), to = toIso(sat);
+  if(minIso && from < minIso) from = minIso;
+  if(to > maxIso) to = maxIso; // don't show empty future days beyond latest reading
+  return { from, to };
+}
+
+const fromInput = document.getElementById('fromDate');
+const toInput = document.getElementById('toDate');
+const applyBtn = document.getElementById('applyFilter');
+const resetBtn = document.getElementById('resetFilter');
+const boundsHint = document.getElementById('dataBoundsHint');
+
+function applyBoundsToInputs(){
+  if(!BOUNDS.min || !BOUNDS.max){
+    boundsHint.textContent = 'No data loaded yet — connect Google Sheets below and sync.';
+    fromInput.value = ''; toInput.value = '';
+    return;
+  }
+  fromInput.min = BOUNDS.min; fromInput.max = BOUNDS.max;
+  toInput.min = BOUNDS.min; toInput.max = BOUNDS.max;
+  boundsHint.textContent = 'Data available: ' + fmtDate(BOUNDS.min) + ' – ' + fmtDate(BOUNDS.max);
+}
+function setDefaultRange(){
+  if(!BOUNDS.min || !BOUNDS.max) return;
+  const lw = lastWeekRange(BOUNDS.max, BOUNDS.min);
+  fromInput.value = lw.from;
+  toInput.value = lw.to;
+}
+applyBoundsToInputs();
+setDefaultRange();
+
+let currentSystem = null;
+
+applyBtn.addEventListener('click', ()=>{
+  if(!fromInput.value || !toInput.value){ return; }
+  if(fromInput.value > toInput.value){
+    // swap if user picked them backwards
+    const tmp = fromInput.value; fromInput.value = toInput.value; toInput.value = tmp;
+  }
+  if(currentSystem) render(currentSystem);
+});
+
+resetBtn.addEventListener('click', ()=>{
+  setDefaultRange();
+  if(currentSystem) render(currentSystem);
+});
+
+// Row/tab parsing shared by the Google Sheets sync path: maps sheet tabs to known systems, merges new/changed rows.
+const HEADER_ALIASES = {
+  date:      ['date','day'],
+  salinity:  ['salinity','sal','ppt'],
+  temp:      ['temp','temperature','°c','c'],
+  alk:       ['alk','alkalinity','dkh','kh'],
+  ca:        ['ca','calcium'],
+  mg:        ['mg','magnesium'],
+  no2:       ['no2','nitrite'],
+  no3:       ['no3','nitrate'],
+  po4:       ['po4','phosphate'],
+  nh4:       ['nh4','ammonia','nh3'],
+  redox:     ['redox','orp','mv'],
+  notes:     ['notes','note','comment','comments'],
+};
+function normalizeHeader(h){
+  return String(h||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
+}
+function buildHeaderMap(headerRow){
+  const map = {}; // columnIndex -> our field key
+  headerRow.forEach((raw, i)=>{
+    const norm = normalizeHeader(raw);
+    if(!norm) return;
+    for(const key in HEADER_ALIASES){
+      if(HEADER_ALIASES[key].some(a=>normalizeHeader(a)===norm)){
+        map[i] = key; return;
+      }
+    }
+  });
+  return map;
+}
+function excelSerialToIso(v){
+  // SheetJS date cells usually already come through as JS Date when cellDates:true;
+  // this covers the case a date arrives as a raw serial number instead.
+  const epoch = new Date(Date.UTC(1899,11,30));
+  const d = new Date(epoch.getTime() + v*86400000);
+  return d.toISOString().slice(0,10);
+}
+function toIsoDate(v){
+  if(v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+  if(typeof v === 'number') return excelSerialToIso(v);
+  if(typeof v === 'string'){
+    const s = v.trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return m[0];
+    m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/); // DD/MM/YYYY or MM/DD/YYYY
+    if(m){
+      const a = +m[1], b = +m[2], y = m[3];
+      const dd = a>12 ? a : b, mm = a>12 ? b : a; // best-effort
+      return y+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+    }
+    const parsed = new Date(s);
+    if(!isNaN(parsed)) return parsed.toISOString().slice(0,10);
+  }
+  return null;
+}
+function matchSystemKey(sheetName){
+  const nm = sheetName.trim().toLowerCase();
+  return order.find(sn => sn.toLowerCase() === nm)
+      || (labels && Object.keys(labels).find(k => (labels[k]||'').toLowerCase() === nm));
+}
+
+// Shared ingestion logic: takes a 2D array of raw rows (row 0 = header) for one
+// system tab, merges it into week[sysKey]. Used by both the local-xlsx parser
+// and the Google Sheets sync path so the two stay in perfect sync.
+function ingestRows2d(sysKey, rows2d){
+  if(!rows2d || !rows2d.length) return { added:0, updated:0, ok:false };
+  const headerMap = buildHeaderMap(rows2d[0]);
+  if(!Object.values(headerMap).includes('date')) return { added:0, updated:0, ok:false };
+
+  if(!week[sysKey]) week[sysKey] = [];
+  const byDate = new Map(week[sysKey].map(r=>[r.date, r]));
+  let added = 0, updated = 0;
+
+  for(let r=1; r<rows2d.length; r++){
+    const raw = rows2d[r];
+    if(!raw) continue;
+    const rec = { date:null, salinity:null, temp:null, alk:null, ca:null, mg:null, no2:null, no3:null, po4:null, nh4:null, redox:null, notes:null };
+    let hasAny = false;
+    Object.keys(headerMap).forEach(colIdx=>{
+      const field = headerMap[colIdx];
+      let val = raw[colIdx];
+      if(val === undefined) val = null;
+      if(field === 'date'){
+        rec.date = toIsoDate(val);
+      } else if(field === 'notes'){
+        const text = (val==null ? '' : String(val)).trim();
+        if(text){ rec.notes = text; hasAny = true; }
+      } else if(val !== null && val !== ''){
+        const num = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.'));
+        if(!isNaN(num)){ rec[field] = num; hasAny = true; }
+      }
+    });
+    if(!rec.date || !hasAny) continue;
+
+    const existing = byDate.get(rec.date);
+    if(existing){
+      let changed = false;
+      Object.keys(rec).forEach(k=>{
+        if(k==='date') return;
+        if(rec[k] != null && rec[k] !== existing[k]){ existing[k] = rec[k]; changed = true; }
+      });
+      if(changed) updated++;
+    } else {
+      byDate.set(rec.date, rec);
+      added++;
+    }
+  }
+
+  week[sysKey] = Array.from(byDate.values()).sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  return { added, updated, ok:true };
+}
+
+/* ---------------------------------------------------------------------
+   Google Sheets sync (private sheet, per-user OAuth via Google Identity
+   Services). Runs entirely client-side — no server, no shared secrets.
+   Client ID / Sheet ID are remembered in this browser's localStorage only.
+--------------------------------------------------------------------- */
+const GS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const gsClientIdInput = document.getElementById('gsheetClientId');
+const gsSheetIdInput = document.getElementById('gsheetId');
+const gsConnectBtn = document.getElementById('gsheetConnect');
+const gsSyncBtn = document.getElementById('gsheetSync');
+const gsStatus = document.getElementById('gsheetStatus');
+
+let gTokenClient = null;
+let gAccessToken = null;
+
+// restore saved settings
+gsClientIdInput.value = localStorage.getItem('vcorals_gs_client_id') || '';
+gsSheetIdInput.value = localStorage.getItem('vcorals_gs_sheet_id') || '';
+gsClientIdInput.addEventListener('change', ()=>{
+  localStorage.setItem('vcorals_gs_client_id', gsClientIdInput.value.trim());
+  gTokenClient = null; gAccessToken = null; gsSyncBtn.disabled = true;
+});
+gsSheetIdInput.addEventListener('change', ()=> localStorage.setItem('vcorals_gs_sheet_id', gsSheetIdInput.value.trim()));
+
+function extractSpreadsheetId(v){
+  const s = (v||'').trim();
+  const m = s.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : s; // allow pasting either the bare ID or the full URL
+}
+
+function setGsStatus(msg, cls){
+  gsStatus.className = 'gsheet-status' + (cls ? ' ' + cls : '');
+  gsStatus.textContent = msg;
+}
+
+function ensureTokenClient(){
+  const clientId = gsClientIdInput.value.trim();
+  if(!clientId){ setGsStatus('Paste your OAuth Client ID first.', 'err'); return null; }
+  if(!window.google || !google.accounts || !google.accounts.oauth2){
+    setGsStatus('Google sign-in script did not load (check network access).', 'err'); return null;
+  }
+  if(gTokenClient && gTokenClient.__clientId === clientId) return gTokenClient;
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: GS_SCOPE,
+    callback: (resp)=>{
+      if(resp && resp.access_token){
+        gAccessToken = resp.access_token;
+        gsSyncBtn.disabled = false;
+        setGsStatus('✓ Connected to Google. You can sync now.', 'ok');
+      } else {
+        setGsStatus('Google sign-in was cancelled or failed.', 'err');
+      }
+    },
+  });
+  gTokenClient.__clientId = clientId;
+  return gTokenClient;
+}
+
+gsConnectBtn.addEventListener('click', ()=>{
+  const client = ensureTokenClient();
+  if(!client) return;
+  setGsStatus('Opening Google sign-in…');
+  client.requestAccessToken({ prompt: gAccessToken ? '' : 'consent' });
+});
+
+async function gsFetch(url){
+  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + gAccessToken } });
+  if(res.status === 401){
+    gAccessToken = null; gsSyncBtn.disabled = true;
+    throw new Error('Google session expired — click "Connect Google Account" again.');
+  }
+  if(!res.ok){
+    const body = await res.text().catch(()=> '');
+    throw new Error('Sheets API error ' + res.status + ': ' + body.slice(0,200));
+  }
+  return res.json();
+}
+
+gsSyncBtn.addEventListener('click', async ()=>{
+  if(!gAccessToken){ setGsStatus('Connect your Google account first.', 'err'); return; }
+  const spreadsheetId = extractSpreadsheetId(gsSheetIdInput.value);
+  if(!spreadsheetId){ setGsStatus('Paste the Spreadsheet ID or URL first.', 'err'); return; }
+  gsSyncBtn.disabled = true;
+  setGsStatus('Reading tab list…');
+  try{
+    // 1) discover tab names in the spreadsheet
+    const meta = await gsFetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent(spreadsheetId) +
+      '?fields=sheets.properties.title'
+    );
+    const titles = (meta.sheets || []).map(s => s.properties.title);
+    const relevant = titles.filter(t => matchSystemKey(t));
+    if(!relevant.length){
+      setGsStatus('No tab names in this spreadsheet matched a known system.', 'err');
+      gsSyncBtn.disabled = false;
+      return;
+    }
+
+    // 2) fetch all relevant tabs' values in one batch call.
+    //    UNFORMATTED_VALUE + SERIAL_NUMBER keeps numbers as numbers and
+    //    dates as day-serials, matching how the existing xlsx parser
+    //    already expects raw cell values (see toIsoDate/excelSerialToIso).
+    setGsStatus('Fetching ' + relevant.length + ' tab(s)…');
+    const rangesParam = relevant.map(t => 'ranges=' + encodeURIComponent("'" + t.replace(/'/g,"''") + "'")).join('&');
+    const batch = await gsFetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent(spreadsheetId) +
+      '/values:batchGet?' + rangesParam +
+      '&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER'
+    );
+
+    let updatedSystems = [], newRows = 0, updatedRows = 0;
+    (batch.valueRanges || []).forEach((vr, idx)=>{
+      const sysKey = matchSystemKey(relevant[idx]);
+      if(!sysKey) return;
+      const rows2d = vr.values || [];
+      const { added, updated, ok } = ingestRows2d(sysKey, rows2d);
+      if(!ok) return;
+      newRows += added; updatedRows += updated;
+      updatedSystems.push(sysKey);
+    });
+
+    if(!updatedSystems.length){
+      setGsStatus('Tabs matched by name, but none had a recognizable date column.', 'err');
+      gsSyncBtn.disabled = false;
+      return;
+    }
+
+    BOUNDS = computeGlobalBounds();
+    applyBoundsToInputs();
+    setDefaultRange();
+    setGsStatus('✓ Synced ' + updatedSystems.length + ' system(s) — ' + newRows + ' new day(s), ' + updatedRows + ' revised.', 'ok');
+    buildNav();
+    if(currentSystem){
+      render(currentSystem);
+    } else {
+      const firstBtn = document.querySelector('nav.systems button');
+      if(firstBtn) selectSystem(firstBtn.dataset.sn);
+    }
+  }catch(err){
+    console.error(err);
+    setGsStatus(err.message || 'Sync failed.', 'err');
+  }finally{
+    gsSyncBtn.disabled = !gAccessToken;
+  }
+});
+
+const PARAMS = [
+  {key:'salinity', label:'Salinity', unit:'PPT', color:'#4fd1b3', decimals:1},
+  {key:'temp',     label:'Temperature', unit:'°C', color:'#ff7a59', decimals:1},
+  {key:'alk',      label:'Alkalinity', unit:'dKH', color:'#f2c14e', decimals:2},
+  {key:'ca',       label:'Calcium', unit:'ppm', color:'#8ec5ff', decimals:0},
+  {key:'mg',       label:'Magnesium', unit:'ppm', color:'#c792ea', decimals:0},
+  {key:'no3',      label:'Nitrate (NO3)', unit:'ppm', color:'#7ee787', decimals:1},
+  {key:'po4',      label:'Phosphate (PO4)', unit:'ppm', color:'#ffa8a8', decimals:3},
+  {key:'nh4',      label:'Ammonia (NH4)', unit:'ppm', color:'#ffd479', decimals:2},
+  {key:'no2',      label:'Nitrite (NO2)', unit:'ppm', color:'#79c7ff', decimals:2},
+  {key:'redox',    label:'RedOx', unit:'mV', color:'#e0b0ff', decimals:0},
+];
+
+let charts = [];
+
+function buildNav(){
+  const nav = document.getElementById('systemNav');
+  nav.innerHTML = '';
+  order.forEach(sn=>{
+    if(!week[sn]) return;
+    const b = document.createElement('button');
+    b.textContent = sn;
+    b.dataset.sn = sn;
+    b.addEventListener('click', ()=>selectSystem(sn));
+    nav.appendChild(b);
+  });
+}
+
+function selectSystem(sn){
+  currentSystem = sn;
+  document.querySelectorAll('nav.systems button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.sn === sn);
+  });
+  render(sn);
+}
+
+function render(sn){
+  charts.forEach(c=>c.destroy());
+  charts = [];
+
+  const from = fromInput.value || BOUNDS.min;
+  const to = toInput.value || BOUNDS.max;
+
+  // Filter rows to the selected date range
+  const rows = (week[sn]||[]).filter(r => r.date >= from && r.date <= to);
+
+  const tgt = targets[sn] || {};
+  document.getElementById('sysTitle').textContent = labels[sn] || sn;
+  document.getElementById('rangeLabel').textContent =
+    fmtDate(from) + '  →  ' + fmtDate(to);
+
+  const dates = rows.map(r=>fmtDate(r.date));
+  const metaEl = document.getElementById('sysMeta');
+  metaEl.innerHTML = '';
+  const metaItems = [
+    ['Target Salinity', tgt.salinity!=null? tgt.salinity+' PPT':'—'],
+    ['Target Temp', tgt.temp!=null? tgt.temp+' °C':'—'],
+    ['Target ALK', tgt.alk!=null? tgt.alk+' dKH':'—'],
+    ['Target Ca', tgt.ca!=null? tgt.ca+' ppm':'—'],
+    ['Target Mg', tgt.mg!=null? tgt.mg+' ppm':'—'],
+  ];
+  metaItems.forEach(([k,v])=>{
+    const d = document.createElement('div');
+    d.innerHTML = '<b>'+v+'</b>'+k;
+    metaEl.appendChild(d);
+  });
+
+  const grid = document.getElementById('chartGrid');
+  grid.innerHTML = '';
+
+  if(rows.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'card';
+    empty.innerHTML = '<div class="missing">No readings in the selected date range</div>';
+    grid.appendChild(empty);
+    document.getElementById('footerNote').innerHTML =
+      'Source: system tab "' + sn + '" in your connected Google Sheet &middot; ' +
+      'No data for the chosen From/To range.';
+    return;
+  }
+
+  PARAMS.forEach(p=>{
+    const vals = rows.map(r=> (r[p.key]!=null && typeof r[p.key]==='number') ? r[p.key] : null);
+    const hasData = vals.some(v=>v!=null);
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    let targetVal = null;
+    if(p.key==='no3' && tgt.no3){
+      // range like [5,10] not charted as single line, skip target line
+    } else if(tgt[p.key]!=null){
+      targetVal = tgt[p.key];
+    }
+
+    const latestVal = [...vals].reverse().find(v=>v!=null);
+    const sub = latestVal!=null
+      ? 'Latest: ' + latestVal.toFixed(p.decimals) + ' ' + p.unit + (targetVal!=null ? '  •  Target ' + targetVal + ' ' + p.unit : '')
+      : 'No readings in range';
+
+    card.innerHTML = '<h3>'+p.label+'</h3><div class="sub">'+sub+'</div>';
+
+    if(!hasData){
+      const m = document.createElement('div');
+      m.className = 'missing';
+      m.textContent = 'Not tested in this range';
+      card.appendChild(m);
+      grid.appendChild(card);
+      return;
+    }
+
+    // Days with a Notes-column entry get a distinct marker (bigger amber dot).
+    const hasNote = rows.map(r => !!(r.notes && r.notes.trim()));
+    const anyNotes = hasNote.some(Boolean);
+    const pointRadiusArr = vals.map((v,i)=> v==null ? 0 : (hasNote[i] ? 6 : 3));
+    const pointColorArr = vals.map((v,i)=> hasNote[i] ? '#f2c14e' : p.color);
+    const pointBorderArr = vals.map((v,i)=> hasNote[i] ? '#062824' : p.color);
+    const pointBorderWidthArr = vals.map((v,i)=> hasNote[i] ? 2 : 1);
+
+    const canvas = document.createElement('canvas');
+    card.appendChild(canvas);
+    if(anyNotes){
+      const legend = document.createElement('div');
+      legend.className = 'note-legend';
+      legend.innerHTML = '<span class="dot"></span> has a note (hover the point)';
+      card.appendChild(legend);
+    }
+    grid.appendChild(card);
+
+    const datasets = [{
+      label: p.label,
+      data: vals,
+      borderColor: p.color,
+      backgroundColor: p.color+'33',
+      spanGaps: true,
+      tension: 0.3,
+      pointRadius: pointRadiusArr,
+      pointHoverRadius: vals.map((v,i)=> v==null ? 0 : (hasNote[i] ? 8 : 5)),
+      pointBackgroundColor: pointColorArr,
+      pointBorderColor: pointBorderArr,
+      pointBorderWidth: pointBorderWidthArr,
+      borderWidth: 2,
+      fill: false,
+    }];
+
+    if(targetVal!=null){
+      datasets.push({
+        label:'Target',
+        data: dates.map(()=>targetVal),
+        borderColor:'#9fc0bf',
+        borderDash:[4,4],
+        pointRadius:0,
+        borderWidth:1,
+        fill:false,
+      });
+    }
+
+    const chart = new Chart(canvas, {
+      type:'line',
+      data:{ labels: dates, datasets },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            mode:'index', intersect:false,
+            callbacks:{
+              afterBody: (items)=>{
+                if(!items.length) return '';
+                const idx = items[0].dataIndex;
+                const note = rows[idx] && rows[idx].notes;
+                return note ? ['📝 ' + note] : '';
+              }
+            }
+          }
+        },
+        scales:{
+          x:{ ticks:{ color:'#9fc0bf', font:{family:'Courier New', size:10} }, grid:{ color:'#1b475055' } },
+          y:{ ticks:{ color:'#9fc0bf', font:{family:'Courier New', size:10} }, grid:{ color:'#1b475055' } }
+        }
+      }
+    });
+    // fix canvas height via wrapper style
+    canvas.parentElement.style.height = 'auto';
+    canvas.height = 170;
+    charts.push(chart);
+  });
+
+  document.getElementById('footerNote').innerHTML =
+    'Source: system tab "' + sn + '" in your connected Google Sheet &middot; ' +
+    'Dashed line = 2026 target parameter from the Systems tab &middot; ' +
+    'Gaps mean a parameter wasn\'t tested that day. &middot; ' +
+    'Click any point to add a note (shows on hover) &middot; ' +
+    'Filtered range: ' + fmtDate(from) + ' – ' + fmtDate(to);
+}
+
+buildNav();
+selectSystem(order.find(sn=>week[sn]));
+</script>
+</body>
+</html>
